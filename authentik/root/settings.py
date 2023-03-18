@@ -16,6 +16,7 @@ from authentik.lib.logging import add_process_id
 from authentik.lib.sentry import sentry_init
 from authentik.lib.utils.reflection import get_env
 from authentik.stages.password import BACKEND_APP_PASSWORD, BACKEND_INBUILT, BACKEND_LDAP
+from authentik.lib.utils.cron import get_task_period
 
 LOGGER = structlog.get_logger()
 
@@ -327,15 +328,17 @@ LOCALE_PATHS = ["./locale"]
 CELERY_TASK_SOFT_TIME_LIMIT = 600
 CELERY_WORKER_MAX_TASKS_PER_CHILD = 50
 CELERY_WORKER_CONCURRENCY = 2
+clean_expired_models_period = get_task_period("clean_expired_models", {"minute": "2-59/5"})
+user_cleanup_period = get_task_period("user_cleanup", {"minute": "9-59/5"})
 CELERY_BEAT_SCHEDULE = {
     "clean_expired_models": {
         "task": "authentik.core.tasks.clean_expired_models",
-        "schedule": crontab(minute="2-59/5"),
+        "schedule": crontab(**clean_expired_models_period),
         "options": {"queue": "authentik_scheduled"},
     },
     "user_cleanup": {
         "task": "authentik.core.tasks.clean_temporary_users",
-        "schedule": crontab(minute="9-59/5"),
+        "schedule": crontab(**user_cleanup_period),
         "options": {"queue": "authentik_scheduled"},
     },
 }
